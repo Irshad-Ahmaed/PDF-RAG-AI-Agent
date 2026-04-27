@@ -6,5 +6,10 @@ dist/
 wheels/
 *.egg-info
 
+# docs
+context.md
+.gitignore
+
 # Virtual environments
 .venv
+.env
