@@ -1,0 +1,74 @@
+%%{init: {'theme': 'base', 'themeVariables': {'lineColor': '#ffffff', 'edgeLabelBackground': '#ffffff'}}}%%
+flowchart TD
+    classDef trigger  fill:#E17055,stroke:#C0392B,color:#fff,font-weight:bold
+    classDef step     fill:#6C5CE7,stroke:#5A4BD1,color:#fff,font-weight:bold
+    classDef process  fill:#0984E3,stroke:#2980B9,color:#fff
+    classDef external fill:#F9CA24,stroke:#F0932B,color:#000,font-weight:bold
+    classDef db       fill:#00B894,stroke:#00A381,color:#fff,font-weight:bold
+    classDef model    fill:#FD79A8,stroke:#E84393,color:#fff,font-weight:bold
+
+    T(["`**EVENT: rag/inngest_pdf**
+    {pdf_path, source_id}`"]):::trigger
+
+    S1["`**STEP 1 — load-and-chunk**
+    ctx.step.run()
+    Result is cached on completion`"]:::step
+
+    P1["`**_load(ctx)**
+    Reads pdf_path and source_id
+    from ctx.event.data`"]:::process
+
+    P2["`**PDFReader().load_data(file)**
+    LlamaIndex opens the PDF binary
+    Returns one Document per page`"]:::external
+
+    P3["`**Filter docs with text**
+    Skips blank or image-only pages`"]:::process
+
+    P4["`**SentenceSplitter.split_text()**
+    chunk_size = 1000 tokens
+    chunk_overlap = 200 tokens
+    Splits only at sentence boundaries`"]:::process
+
+    P5(["`**→ RAGChunkAndSrc**
+    chunks: list of text strings
+    source_id: the PDF identifier`"]):::model
+
+    S2["`**STEP 2 — embed-and-upsert**
+    ctx.step.run()
+    Receives RAGChunkAndSrc from Step 1`"]:::step
+
+    P6["`**embed_texts(chunks)**
+    Loops over each chunk individually
+    gemini-embedding-2 aggregates batch
+    inputs — must call one at a time`"]:::process
+
+    P7["`**Gemini: embed_content()**
+    model: gemini-embedding-2
+    output_dimensionality: 768
+    One API call per chunk`"]:::external
+
+    P8["`**uuid.uuid5(NAMESPACE_URL, key)**
+    Deterministic ID per chunk
+    Same PDF always gets same UUID
+    Re-ingesting updates, not duplicates`"]:::process
+
+    P9["`**Build payloads**
+    source: source_id
+    text: chunk content`"]:::process
+
+    P10["`**VectorDB().upsert()**
+    Builds PointStruct list
+    Sends all points to Qdrant in batch`"]:::process
+
+    P11["`**Qdrant: client.upsert()**
+    Stores vectors and payloads
+    HNSW index, COSINE distance`"]:::db
+
+    P12(["`**→ RAGUpsertResult**
+    inngested: N  (total chunks stored)`"]):::model
+
+    T ==> S1 ==> P1 ==> P2 ==> P3 ==> P4 ==> P5
+    P5 ==> S2 ==> P6 ==> P7 ==> P8 ==> P9 ==> P10 ==> P11 ==> P12
+
+    linkStyle default stroke:#ffffff,stroke-width:2.5px

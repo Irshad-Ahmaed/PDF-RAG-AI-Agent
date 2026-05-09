@@ -1,0 +1,32 @@
+%%{init: {'theme': 'base', 'themeVariables': {'lineColor': '#ffffff', 'edgeLabelBackground': '#ffffff'}}}%%
+flowchart LR
+    classDef qvec  fill:#6C5CE7,stroke:#5A4BD1,color:#fff,font-weight:bold
+    classDef high  fill:#00B894,stroke:#00A381,color:#fff,font-weight:bold
+    classDef med   fill:#FDCB6E,stroke:#E17055,color:#2D3436,font-weight:bold
+    classDef low   fill:#E17055,stroke:#C0392B,color:#fff,font-weight:bold
+
+    Q["`**QUESTION VECTOR**
+    'What is the internship role?'
+    → 768 floats encoding meaning`"]:::qvec
+
+    C1["`**Chunk 1**
+    'Backend Developer Intern...'
+    Similarity: **0.94** ✓ HIGH
+    → RETURNED as context`"]:::high
+
+    C2["`**Chunk 2**
+    'Work arrangement is remote...'
+    Similarity: **0.71** ✓ MEDIUM
+    → RETURNED as context`"]:::med
+
+    C3["`**Chunk 3**
+    'ZRVCGSKHGC ZRVCGSKHGC...'
+    watermark text — no meaning
+    Similarity: **0.18** ✗ LOW
+    → SKIPPED`"]:::low
+
+    Q ==>|"cosine sim = 0.94"| C1
+    Q ==>|"cosine sim = 0.71"| C2
+    Q ==>|"cosine sim = 0.18"| C3
+
+    linkStyle default stroke:#ffffff,stroke-width:2.5px

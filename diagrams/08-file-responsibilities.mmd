@@ -1,0 +1,38 @@
+%%{init: {'theme': 'base', 'themeVariables': {'lineColor': '#ffffff', 'edgeLabelBackground': '#ffffff'}}}%%
+flowchart LR
+    classDef file fill:#2D3436,stroke:#636E72,color:#fff,font-weight:bold
+    classDef resp fill:#0984E3,stroke:#2980B9,color:#fff
+
+    main["`**main.py**`"]:::file
+    ct["`**custom_types.py**`"]:::file
+    dl["`**data_loader.py**`"]:::file
+    vdb["`**vector_db.py**`"]:::file
+
+    r1["`FastAPI app
+    Inngest client and functions
+    Step orchestration logic
+    Prompt construction
+    Gemini generation calls`"]:::resp
+
+    r2["`Pydantic models:
+    RAGChunkAndSrc
+    RAGUpsertResult
+    RAGSearchResult
+    RAGQueryResult`"]:::resp
+
+    r3["`PDF loading via LlamaIndex
+    Text chunking via SentenceSplitter
+    Embedding calls via Gemini
+    embed_texts() helper`"]:::resp
+
+    r4["`Qdrant client wrapper
+    Collection auto-creation
+    upsert() — store vectors
+    search() — find similar`"]:::resp
+
+    main === r1
+    ct === r2
+    dl === r3
+    vdb === r4
+
+    linkStyle default stroke:#ffffff,stroke-width:2.5px

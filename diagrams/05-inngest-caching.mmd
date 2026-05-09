@@ -1,0 +1,52 @@
+%%{init: {'theme': 'base', 'themeVariables': {'lineColor': '#ffffff', 'edgeLabelBackground': '#ffffff'}}}%%
+flowchart TD
+    classDef good fill:#00B894,stroke:#00A381,color:#fff,font-weight:bold
+    classDef bad  fill:#E17055,stroke:#C0392B,color:#fff,font-weight:bold
+    classDef info fill:#0984E3,stroke:#2980B9,color:#fff,font-weight:bold
+    classDef warn fill:#FDCB6E,stroke:#E17055,color:#2D3436,font-weight:bold
+    classDef decision fill:#DFE6E9,stroke:#636E72,color:#2D3436,font-weight:bold
+
+    A(["`**NEW EVENT ARRIVES**
+    Inngest creates a fresh run.
+    No step cache exists yet.`"]):::info
+
+    B{"`**Step 1 completed
+    in this run before?**`"}:::decision
+
+    C["`**EXECUTE step code fresh**
+    Calls Gemini and Qdrant.
+    Gets real results.`"]:::good
+
+    D["`**Cache step 1 result**
+    RAGSearchResult stored under
+    this run ID + step name.`"]:::good
+
+    E["`**SKIP step code entirely**
+    Returns old cached result.
+    Your code fix has NO effect.`"]:::bad
+
+    F{"`**Step 2 completed
+    in this run before?**`"}:::decision
+
+    G["`**EXECUTE step code fresh**
+    Runs generate-answer normally.`"]:::good
+
+    H["`**SKIP step code entirely**
+    Returns old cached answer.`"]:::bad
+
+    I(["`**Function returns final result**`"]):::info
+
+    W["`**TRAP — Why retries fail after a bug fix:**
+    Fix code → retry same run →
+    Inngest still replays cached empty result.
+    SOLUTION: Send a BRAND NEW event.`"]:::warn
+
+    A ==> B
+    B ==>|"No — first time"| C ==> D ==> F
+    B ==>|"Yes — retry/replay"| E ==> F
+    F ==>|"No — first time"| G ==> I
+    F ==>|"Yes — retry/replay"| H ==> I
+    E -.->|"causes this"| W
+    H -.->|"causes this"| W
+
+    linkStyle default stroke:#ffffff,stroke-width:2.5px

@@ -1,0 +1,35 @@
+%%{init: {'theme': 'base', 'themeVariables': {'lineColor': '#ffffff', 'actorBkg': '#0984E3', 'actorTextColor': '#ffffff', 'actorBorderColor': '#2980B9', 'activationBkgColor': '#74B9FF', 'activationBorderColor': '#0984E3', 'noteBkgColor': '#F9CA24', 'noteTextColor': '#000000', 'signalColor': '#ffffff', 'signalTextColor': '#ffffff'}}}%%
+sequenceDiagram
+    actor User
+    participant INN as Inngest Server
+    participant FA as FastAPI
+    participant DL as data_loader.py
+    participant GEM_E as Gemini Embed
+    participant QD as Qdrant
+    participant GEM_G as Gemini Generate
+
+    User->>+INN: Send event: rag/query_pdf_ai<br/>{question, top_k}
+    INN->>+FA: HTTP POST /api/inngest<br/>deliver event payload
+    FA->>FA: rag_query_inngest_pdf(ctx) invoked
+
+    rect rgb(200, 191, 255, 0.4)
+        Note over FA,QD: STEP 1 — embed-and-search
+        FA->>+DL: embed_texts([question])
+        DL->>+GEM_E: embed_content()<br/>model=gemini-embedding-2<br/>output_dimensionality=768
+        GEM_E-->>-DL: {embeddings: [{values: [768 floats]}]}
+        DL-->>-FA: [[...768 floats...]] → take [0]
+        FA->>+QD: query_points()<br/>query=[768 floats], limit=top_k<br/>with_payload=True
+        QD-->>-FA: [{score, payload:{text,source}}, ...]
+        FA->>FA: extract contexts[] and sources set
+        FA-->>INN: RAGSearchResult cached ✓
+    end
+
+    rect rgb(249, 202, 36, 0.3)
+        Note over FA,GEM_G: STEP 2 — generate-answer
+        FA->>FA: Build prompt with context chunks
+        FA->>+GEM_G: generate_content()<br/>model=gemini-2.5-flash-lite<br/>temperature=0.2
+        GEM_G-->>-FA: {text: answer string}
+        FA-->>-INN: RAGQueryResult cached ✓
+    end
+
+    INN-->>-User: {answer, contexts, num_contexts}

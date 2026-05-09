@@ -1,17 +1,17 @@
-import pydentic
+import pydantic
 
-class RAGChunkAndSrc(pydentic.BaseModel):
+class RAGChunkAndSrc(pydantic.BaseModel):
     chunks: list[str]
-    source_id: str = None
+    source_id: str | None = None
 
-class RAGUpsertResult(pydentic.BaseModel):
-    inngested: int
+class RAGUpsertResult(pydantic.BaseModel):
+    ingested: int
 
-class RAGSearchResult(pydentic.BaseModel):
+class RAGSearchResult(pydantic.BaseModel):
     contexts: list[str]
     sources: list[str]
 
-class RAGQueryResult(pydentic.BaseModel):
+class RAGQueryResult(pydantic.BaseModel):
     answer: str
     contexts: list[str]
     num_contexts: int

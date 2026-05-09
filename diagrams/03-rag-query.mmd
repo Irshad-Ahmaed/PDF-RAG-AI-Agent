@@ -1,0 +1,77 @@
+%%{init: {'theme': 'base', 'themeVariables': {'lineColor': '#ffffff', 'edgeLabelBackground': '#ffffff'}}}%%
+flowchart TD
+    classDef trigger  fill:#E17055,stroke:#C0392B,color:#fff,font-weight:bold
+    classDef step     fill:#6C5CE7,stroke:#5A4BD1,color:#fff,font-weight:bold
+    classDef process  fill:#0984E3,stroke:#2980B9,color:#fff
+    classDef external fill:#F9CA24,stroke:#F0932B,color:#000,font-weight:bold
+    classDef db       fill:#00B894,stroke:#00A381,color:#fff,font-weight:bold
+    classDef model    fill:#FD79A8,stroke:#E84393,color:#fff,font-weight:bold
+    classDef guard    fill:#DFE6E9,stroke:#636E72,color:#2D3436,font-weight:bold
+
+    T(["`**EVENT: rag/query_pdf_ai**
+    {question, top_k}`"]):::trigger
+
+    S1["`**STEP 1 — embed-and-search**
+    ctx.step.run()
+    Result cached — replays skip this step`"]:::step
+
+    P1["`**embed_texts([question])[0]**
+    Wrap question in list, embed it,
+    take index 0 for the single vector
+    Must use same model as ingestion`"]:::process
+
+    P2["`**Gemini: embed_content()**
+    model: gemini-embedding-2
+    output_dimensionality: 768
+    Returns question as 768-dim vector`"]:::external
+
+    P3["`**client.query_points()**
+    collection: docs
+    query: [768 floats]
+    with_payload: True
+    limit: top_k`"]:::db
+
+    P4["`**Extract payload text**
+    payload.get('text') or payload.get('texts','')
+    Builds contexts list and sources set`"]:::process
+
+    P5(["`**→ RAGSearchResult**
+    contexts: list of chunk strings
+    sources: list of PDF filenames`"]):::model
+
+    S2["`**STEP 2 — generate-answer**
+    ctx.step.run()
+    Receives found.contexts from Step 1`"]:::step
+
+    G{"`**contexts empty?**`"}:::guard
+
+    P6(["`**→ early return**
+    No relevant context found
+    in the knowledge base`"]):::model
+
+    P7["`**Build context_block**
+    Join chunks as bullet points
+    with double newlines between`"]:::process
+
+    P8["`**Build prompt**
+    Use the following context to answer...
+    Question: {question}
+    Context: {context_block}
+    If you dont know, say so`"]:::process
+
+    P9["`**Gemini: generate_content()**
+    model: gemini-2.5-flash-lite
+    temperature: 0.2
+    max_output_tokens: 1024`"]:::external
+
+    P10(["`**→ RAGQueryResult**
+    answer: str
+    contexts: list of chunks used
+    num_contexts: int`"]):::model
+
+    T ==> S1 ==> P1 ==> P2 ==> P3 ==> P4 ==> P5
+    P5 ==> S2 ==> G
+    G ==>|"yes — empty"| P6
+    G ==>|"no — has context"| P7 ==> P8 ==> P9 ==> P10
+
+    linkStyle default stroke:#ffffff,stroke-width:2.5px

@@ -1,0 +1,38 @@
+%%{init: {'theme': 'base', 'themeVariables': {'lineColor': '#ffffff', 'classBkg': '#74B9FF', 'classText': '#000000', 'edgeLabelBackground': '#ffffff'}}}%%
+classDiagram
+    direction LR
+
+    class RAGChunkAndSrc {
+        +list~str~ chunks
+        +str source_id
+        ---
+        Output of: load-and-chunk step
+        Input to: embed-and-upsert step
+    }
+
+    class RAGUpsertResult {
+        +int inngested
+        ---
+        Output of: embed-and-upsert step
+        Returned by: rag_inngest_pdf
+    }
+
+    class RAGSearchResult {
+        +list~str~ contexts
+        +list~str~ sources
+        ---
+        Output of: embed-and-search step
+        Input to: generate-answer step
+    }
+
+    class RAGQueryResult {
+        +str answer
+        +list~str~ contexts
+        +int num_contexts
+        ---
+        Output of: generate-answer step
+        Returned by: rag_query_inngest_pdf
+    }
+
+    RAGChunkAndSrc --> RAGUpsertResult : embed-and-upsert
+    RAGSearchResult --> RAGQueryResult : generate-answer

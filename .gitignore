@@ -13,3 +13,7 @@ context.md
 # Virtual environments
 .venv
 .env
+
+Implementation_Plan.md
+Project_Documentation.md
+qdrant_storage/

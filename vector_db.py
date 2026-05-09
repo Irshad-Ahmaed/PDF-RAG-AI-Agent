@@ -2,7 +2,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 
 class VectorDB:
-    def __init__(self, url="http://localhost:6333", collection="docs", dim=3072):
+    def __init__(self, url="http://localhost:6333", collection="docs", dim=768):
         self.client=QdrantClient(url=url, timeout=30)
         self.collection=collection
         if not self.client.collection_exists(self.collection):
@@ -17,23 +17,23 @@ class VectorDB:
         self.client.upsert(self.collection, points=points)
     
     def search(self, query_vector, top_k: int=5):
-        results = self.client.search(
+        response = self.client.query_points(
             collection_name=self.collection,
-            query_vector=query_vector,
+            query=query_vector,
             with_payload=True,
             limit=top_k
         )
 
         contexts = []
-        sorces = set()
+        sources = set()
 
-        for r in results:
+        for r in response.points:
             payload = getattr(r, "payload", None) or {}
-            text = payload.get("text", "")
+            text = payload.get("text") or payload.get("texts", "")
             source = payload.get("source", "")
 
             if text:
                 contexts.append(text)
-                sorces.add(source)
+                sources.add(source)
         
-        return {"contexts": contexts, "sources": list(sorces)}
+        return {"contexts": contexts, "sources": list(sources)}

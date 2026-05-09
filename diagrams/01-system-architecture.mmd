@@ -1,0 +1,68 @@
+%%{init: {'theme': 'base', 'themeVariables': {'lineColor': '#ffffff', 'edgeLabelBackground': '#ffffff'}}}%%
+flowchart TD
+    classDef event    fill:#E17055,stroke:#C0392B,color:#fff,font-weight:bold
+    classDef fastapi  fill:#0984E3,stroke:#2980B9,color:#fff,font-weight:bold
+    classDef inngest  fill:#6C5CE7,stroke:#5A4BD1,color:#fff,font-weight:bold
+    classDef gemini   fill:#F9CA24,stroke:#F0932B,color:#000,font-weight:bold
+    classDef qdrant   fill:#00B894,stroke:#00A381,color:#fff,font-weight:bold
+    classDef loader   fill:#FD79A8,stroke:#E84393,color:#fff,font-weight:bold
+
+    EV1(["`**Event: rag/inngest_pdf**
+    pdf_path, source_id`"]):::event
+    EV2(["`**Event: rag/query_pdf_ai**
+    question, top_k`"]):::event
+
+    FA["`**FastAPI**
+    main.py — HTTP server
+    Serves on port 8000`"]:::fastapi
+
+    INN["`**Inngest**
+    Orchestration Engine
+    Receives events, runs steps,
+    caches results, retries on failure`"]:::inngest
+
+    F1["`**rag_inngest_pdf**
+    Step 1: load-and-chunk
+    Step 2: embed-and-upsert`"]:::inngest
+
+    F2["`**rag_query_inngest_pdf**
+    Step 1: embed-and-search
+    Step 2: generate-answer`"]:::inngest
+
+    DL["`**data_loader.py**
+    PDFReader — extracts text
+    SentenceSplitter — makes chunks
+    embed_texts — calls Gemini`"]:::loader
+
+    GEM1["`**Gemini Embedding API**
+    Model: gemini-embedding-2
+    768-dim dense vectors
+    One call per chunk/query`"]:::gemini
+
+    GEM2["`**Gemini Generate API**
+    Model: gemini-2.5-flash-lite
+    Text generation
+    max_tokens=1024, temp=0.2`"]:::gemini
+
+    QD["`**Qdrant Vector DB**
+    localhost:6333
+    Collection: docs
+    Distance: COSINE`"]:::qdrant
+
+    EV1 ==> FA
+    EV2 ==> FA
+    FA ==> INN
+    INN ==> F1
+    INN ==> F2
+    F1 ==> DL
+    DL ==>|"768-dim vectors"| GEM1
+    GEM1 ==>|"embeddings"| DL
+    DL ==>|"upsert vectors + payloads"| QD
+    F2 ==>|"embed question"| GEM1
+    GEM1 ==>|"query vector"| F2
+    F2 ==>|"query_points"| QD
+    QD ==>|"top-k chunks"| F2
+    F2 ==>|"prompt + context"| GEM2
+    GEM2 ==>|"answer text"| F2
+
+    linkStyle default stroke:#ffffff,stroke-width:2.5px
